@@ -21,6 +21,8 @@ int main(int argc, char** argv)
 {
 
   tf::Quaternion orientation;
+  tf::Quaternion zero_orientation;
+  bool zero_orientation_set = false;
 
   std::string partial_line = "";
 
@@ -92,20 +94,6 @@ int main(int argc, char** argv)
                ROS_INFO("z = %04x", z );
               //int value = atoi(input.substr(12,4).c_str());
 
-              
-
-
-
-              // publish Range
-              sensor_msgs::Imu imu;
-              imu.header.stamp = ros::Time::now();
-              imu.header.frame_id = "map";
-
-// http://answers.ros.org/question/50870/what-frame-is-sensor_msgsimuorientation-relative-to/
-
-
-// rosserial imu message zui groß für arduino buffer ?????
-// http://answers.ros.org/question/91301/rosserial-fails-when-using-sensor_msgsimu/
 
               double wf = w/16384.0;
               double xf = x/16384.0;
@@ -124,10 +112,44 @@ int main(int argc, char** argv)
 		zf = -4.0 +zf;
 
 
-              imu.orientation.w = wf;
-              imu.orientation.x = xf;
-              imu.orientation.y = yf;
-              imu.orientation.z = zf;
+
+              tf::Quaternion orientation(xf, yf, zf, wf);
+
+              if (!zero_orientation_set)
+              {
+                zero_orientation = orientation;
+                zero_orientation_set = true;
+              }
+
+http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
+
+              tf::Quaternion differential_rotation;
+              differential_rotation = orientation * zero_orientation.inverse();
+
+
+
+
+              // publish Range
+              sensor_msgs::Imu imu;
+              imu.header.stamp = ros::Time::now();
+              imu.header.frame_id = "map";
+
+// http://answers.ros.org/question/50870/what-frame-is-sensor_msgsimuorientation-relative-to/
+
+
+// rosserial imu message zui groß für arduino buffer ?????
+// http://answers.ros.org/question/91301/rosserial-fails-when-using-sensor_msgsimu/
+
+
+
+	      imu.orientation.x  = differential_rotation.getX();
+	      imu.orientation.y  = differential_rotation.getY();
+	      imu.orientation.z  = differential_rotation.getZ();
+	      imu.orientation.w  = differential_rotation.getW();
+// oder so?
+
+              quaternionTFToMsg(differential_rotation, imu.orientation);
+
 
               // i do not know the orientation covariance
               imu.orientation_covariance[0] = 0;
