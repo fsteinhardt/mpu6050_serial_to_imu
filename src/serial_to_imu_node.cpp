@@ -5,6 +5,7 @@
 #include <std_msgs/String.h>
 #include <string>
 #include <tf/transform_datatypes.h>
+#include <std_srvs/Empty.h>
 
 
 
@@ -16,13 +17,23 @@
 
 serial::Serial ser;
 std::string port;
+bool zero_orientation_set = false;
+
+bool set_zero_orientation(std_srvs::Empty::Request&,
+			  std_srvs::Empty::Response&)
+{
+  ROS_INFO("Zero Orientation Set.");
+  zero_orientation_set = false;
+  return true;
+}
+
 
 int main(int argc, char** argv)
 {
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
-  bool zero_orientation_set = false;
+
 
   std::string partial_line = "";
 
@@ -33,6 +44,7 @@ int main(int argc, char** argv)
 
   ros::NodeHandle nh;
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 50);
+  ros::ServiceServer service = nh.advertiseService("set_zero_orientation", set_zero_orientation);
 
   ros::Rate r(1000); // 1000 hz
 
@@ -121,7 +133,7 @@ int main(int argc, char** argv)
                 zero_orientation_set = true;
               }
 
-http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
+              //http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
 
               tf::Quaternion differential_rotation;
               differential_rotation = zero_orientation.inverse() * orientation;
