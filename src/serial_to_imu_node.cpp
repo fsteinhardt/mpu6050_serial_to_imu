@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
 
               tf::Quaternion differential_rotation;
-              differential_rotation = orientation * zero_orientation.inverse();
+              differential_rotation = zero_orientation.inverse() * orientation;
 
 
 
@@ -141,12 +141,6 @@ http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
 // http://answers.ros.org/question/91301/rosserial-fails-when-using-sensor_msgsimu/
 
 
-
-	      imu.orientation.x  = differential_rotation.getX();
-	      imu.orientation.y  = differential_rotation.getY();
-	      imu.orientation.z  = differential_rotation.getZ();
-	      imu.orientation.w  = differential_rotation.getW();
-// oder so?
 
               quaternionTFToMsg(differential_rotation, imu.orientation);
 
