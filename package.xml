@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>serial_to_imu</name>
+  <name>mpu6050_serial_to_imu</name>
   <version>0.0.1</version>
-  <description>The serial_to_imu package</description>
+  <description>The mpu6050_serial_to_imu package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/serial_to_imu</url> -->
+  <!-- <url type="website">http://wiki.ros.org/mpu6050_serial_to_imu</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->

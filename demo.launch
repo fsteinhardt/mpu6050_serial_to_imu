@@ -1,9 +1,9 @@
 <launch>
 
-  <node pkg="serial_to_imu" type="serial_to_imu_node" name="serial_to_imu_node" required="true">
+  <node pkg="mpu6050_serial_to_imu" type="mpu6050_serial_to_imu_node" name="mpu6050_serial_to_imu_node" required="true">
     <param name="port" value="/dev/ttyACM0"/>
   </node>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find serial_to_imu)/demo.rviz"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mpu6050_serial_to_imu)/demo.rviz" required="true"/>
 
 </launch>
