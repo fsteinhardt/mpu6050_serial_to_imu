@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   serial
   std_msgs
   std_srvs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -105,7 +106,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mpu6050_serial_to_imu
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs serial std_msgs std_srvs
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs serial std_msgs std_srvs tf
 #  DEPENDS system_lib
 )
 
