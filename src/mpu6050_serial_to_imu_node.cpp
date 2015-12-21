@@ -12,6 +12,7 @@
 
 serial::Serial ser;
 std::string port;
+double time_offset_in_seconds;
 bool zero_orientation_set = false;
 
 bool set_zero_orientation(std_srvs::Empty::Request&,
@@ -36,6 +37,7 @@ int main(int argc, char** argv)
 
   ros::NodeHandle private_node_handle("~");
   private_node_handle.param<std::string>("port", port, "/dev/ttyACM0");
+  private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
 
   ros::NodeHandle nh;
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 50);
@@ -134,10 +136,12 @@ int main(int argc, char** argv)
 
 
 
+              // calculate measurement time
+              ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
 
               // publish imu message
               sensor_msgs::Imu imu;
-              imu.header.stamp = ros::Time::now();
+              imu.header.stamp = measurement_time;
               imu.header.frame_id = "map";
 
 // http://answers.ros.org/question/50870/what-frame-is-sensor_msgsimuorientation-relative-to/
@@ -177,7 +181,7 @@ int main(int argc, char** argv)
               static tf::TransformBroadcaster br;
               tf::Transform transform;
               transform.setRotation(differential_rotation);
-              br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "imu_base", "imu"));
+              br.sendTransform(tf::StampedTransform(transform, measurement_time, "imu_base", "imu"));
 
             }
 
