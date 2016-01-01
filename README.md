@@ -29,7 +29,7 @@ A demo launchfile is included to start the node and display the result in rviz.
 
 	The resulting Imu orientation.
 
-#### Published TF transforms
+#### Published TF Transforms
 
 *	The resulting orientation is published as a tf transform, the frame names can be set using the parameters.
 
@@ -43,7 +43,7 @@ A demo launchfile is included to start the node and display the result in rviz.
 
 #### Parameters
 
-* **`port`** (string, default: "/dev/ACM0")
+* **`port`** (string, default: "/dev/ttyACM0")
 
 	The name of the serial port.
 
