@@ -9,18 +9,15 @@
 #include <tf/transform_datatypes.h>
 
 
-
-
 bool zero_orientation_set = false;
 
 bool set_zero_orientation(std_srvs::Empty::Request&,
-			  std_srvs::Empty::Response&)
+                          std_srvs::Empty::Response&)
 {
   ROS_INFO("Zero Orientation Set.");
   zero_orientation_set = false;
   return true;
 }
-
 
 int main(int argc, char** argv)
 {
@@ -31,10 +28,8 @@ int main(int argc, char** argv)
   std::string imu_frame_id;
   double time_offset_in_seconds;
 
-
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
-
 
   std::string partial_line = "";
 
@@ -59,57 +54,40 @@ int main(int argc, char** argv)
     {
       if (ser.isOpen())
       {
-
-
         // read string from serial device
         if(ser.available())
         {
-          //ROS_INFO_STREAM("Reading from serial port");
           std_msgs::String result;
           result.data = ser.readline(ser.available(), "\n");
-          //ROS_INFO_STREAM("Read: " << result.data);
 
-          // find distance__ tag
           std::string input = partial_line + result.data;
-          //std::cout << " *********** :"  << input << std::endl;
 
-          // is this a complete line? the atoi lines crash if the string is not long enough
           if (input.at( input.length() - 1 ) == '\n')
           {
             // line complete, delete partial_line var
             partial_line = "";
-            //ROS_INFO_STREAM("Read: " << input);
-            // TODO check if line is long enough??
 
+            // TODO check if line is long enough??
             if (input.compare(0,53,"Send any character to begin DMP programming and demo:") == 0 )
             {
-              ROS_INFO("Sending 'A'");
+              ROS_DEBUG("Sending 'A'");
               ser.write("A");
             }
 
             // parse line, get quaternion values
-
             if (input.compare(0,2,"$\x02") == 0 && (input.size() == 14))
             {
-              for (int i = 0; i < 14; i= i+1)
-	      {
-                  //ROS_INFO("%d: %02x", i , 0xff & (char)input[i]);
-              }
-              //ROS_INFO_STREAM(std::hex << input << std::dec);
-             // std::string channelString = input.substr(10,1);
-               uint w = (((0xff &(char)input[2]) << 8) | 0xff &(char)input[3]) ;
-               ROS_INFO("w = %04x", w );
+              uint w = (((0xff &(char)input[2]) << 8) | 0xff &(char)input[3]);
+              ROS_DEBUG("w = %04x", w );
 
-               uint x = (((0xff &(char)input[4]) << 8) | 0xff &(char)input[5]);
-               ROS_INFO("x = %04x", x );
+              uint x = (((0xff &(char)input[4]) << 8) | 0xff &(char)input[5]);
+              ROS_DEBUG("x = %04x", x );
 
-               uint y = (((0xff &(char)input[6]) << 8) | 0xff &(char)input[7]);
-               ROS_INFO("y = %04x", y );
+              uint y = (((0xff &(char)input[6]) << 8) | 0xff &(char)input[7]);
+              ROS_DEBUG("y = %04x", y );
 
-               uint z = (((0xff &(char)input[8]) << 8) | 0xff &(char)input[9]);
-               ROS_INFO("z = %04x", z );
-              //int value = atoi(input.substr(12,4).c_str());
-
+              uint z = (((0xff &(char)input[8]) << 8) | 0xff &(char)input[9]);
+              ROS_DEBUG("z = %04x", z );
 
               double wf = w/16384.0;
               double xf = x/16384.0;
@@ -117,18 +95,24 @@ int main(int argc, char** argv)
               double zf = z/16384.0;
 
               if (wf >= 2.0)
-		wf = -4.0 +wf;
+              {
+                wf = -4.0 +wf;
+              }
 
               if (xf >= 2.0)
-		xf = -4.0 +xf;
+              {
+                xf = -4.0 +xf;
+              }
 
               if (yf >= 2.0)
-		yf = -4.0 +yf;
+              {
+                yf = -4.0 +yf;
+              }
 
               if (zf >= 2.0)
-		zf = -4.0 +zf;
-
-
+              {
+                zf = -4.0 +zf;
+              }
 
               tf::Quaternion orientation(xf, yf, zf, wf);
 
@@ -139,10 +123,8 @@ int main(int argc, char** argv)
               }
 
               //http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
-
               tf::Quaternion differential_rotation;
               differential_rotation = zero_orientation.inverse() * orientation;
-
 
               // calculate measurement time
               ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
@@ -152,16 +134,7 @@ int main(int argc, char** argv)
               imu.header.stamp = measurement_time;
               imu.header.frame_id = imu_frame_id;
 
-// http://answers.ros.org/question/50870/what-frame-is-sensor_msgsimuorientation-relative-to/
-
-
-// rosserial imu message zui groß für arduino buffer ?????
-// http://answers.ros.org/question/91301/rosserial-fails-when-using-sensor_msgsimu/
-
-
-
               quaternionTFToMsg(differential_rotation, imu.orientation);
-
 
               // i do not know the orientation covariance
               imu.orientation_covariance[0] = 0;
@@ -183,7 +156,6 @@ int main(int argc, char** argv)
               imu_pub.publish(imu);
 
               // publish tf transform
-
               static tf::TransformBroadcaster br;
               tf::Transform transform;
               transform.setRotation(differential_rotation);
@@ -220,7 +192,7 @@ int main(int argc, char** argv)
 
         if(ser.isOpen())
         {
-          ROS_INFO_STREAM("Serial port " << ser.getPort() << " initialized.");
+          ROS_DEBUG_STREAM("Serial port " << ser.getPort() << " initialized.");
         }
         else
         {
