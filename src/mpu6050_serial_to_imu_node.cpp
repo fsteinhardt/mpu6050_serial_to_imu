@@ -10,9 +10,7 @@
 
 
 
-serial::Serial ser;
-std::string port;
-double time_offset_in_seconds;
+
 bool zero_orientation_set = false;
 
 bool set_zero_orientation(std_srvs::Empty::Request&,
@@ -26,6 +24,13 @@ bool set_zero_orientation(std_srvs::Empty::Request&,
 
 int main(int argc, char** argv)
 {
+  serial::Serial ser;
+  std::string port;
+  std::string tf_parent_frame_id;
+  std::string tf_frame_id;
+  std::string imu_frame_id;
+  double time_offset_in_seconds;
+
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
@@ -37,6 +42,9 @@ int main(int argc, char** argv)
 
   ros::NodeHandle private_node_handle("~");
   private_node_handle.param<std::string>("port", port, "/dev/ttyACM0");
+  private_node_handle.param<std::string>("tf_parent_frame_id", tf_parent_frame_id, "imu_base");
+  private_node_handle.param<std::string>("tf_frame_id", tf_frame_id, "imu");
+  private_node_handle.param<std::string>("imu_frame_id", imu_frame_id, "imu_base");
   private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
 
   ros::NodeHandle nh;
@@ -107,9 +115,10 @@ int main(int argc, char** argv)
               double xf = x/16384.0;
               double yf = y/16384.0;
               double zf = z/16384.0;
- 
+
               if (wf >= 2.0)
 		wf = -4.0 +wf;
+
               if (xf >= 2.0)
 		xf = -4.0 +xf;
 
@@ -135,14 +144,13 @@ int main(int argc, char** argv)
               differential_rotation = zero_orientation.inverse() * orientation;
 
 
-
               // calculate measurement time
               ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
 
               // publish imu message
               sensor_msgs::Imu imu;
               imu.header.stamp = measurement_time;
-              imu.header.frame_id = "map";
+              imu.header.frame_id = imu_frame_id;
 
 // http://answers.ros.org/question/50870/what-frame-is-sensor_msgsimuorientation-relative-to/
 
@@ -174,17 +182,13 @@ int main(int argc, char** argv)
 
               imu_pub.publish(imu);
 
-
-
               // publish tf transform
 
               static tf::TransformBroadcaster br;
               tf::Transform transform;
               transform.setRotation(differential_rotation);
-              br.sendTransform(tf::StampedTransform(transform, measurement_time, "imu_base", "imu"));
-
+              br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
             }
-
           }
           else
           {

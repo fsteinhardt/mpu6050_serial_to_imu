@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Status1
         - /Imu1
         - /Imu1/Box properties1
       Splitter Ratio: 0.5
@@ -73,7 +74,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: map
+    Fixed Frame: imu_base
     Frame Rate: 30
   Name: root
   Tools:
@@ -127,5 +128,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1200
-  X: 71
+  X: 61
   Y: 14
