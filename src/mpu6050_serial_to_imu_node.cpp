@@ -67,10 +67,11 @@ int main(int argc, char** argv)
             // line complete, delete partial_line var
             partial_line = "";
 
-            // TODO check if line is long enough??
+            // TODO: check if line is long enough??
+
             if (input.compare(0,53,"Send any character to begin DMP programming and demo:") == 0 )
             {
-              ROS_DEBUG("Sending 'A'");
+              ROS_DEBUG("Sending 'A' to start sending of IMU data.");
               ser.write("A");
             }
 
