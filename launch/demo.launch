@@ -4,6 +4,6 @@
     <param name="port" value="/dev/ttyACM0"/>
   </node>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mpu6050_serial_to_imu)/demo.rviz" required="true"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mpu6050_serial_to_imu)/rviz/demo.rviz" required="true"/>
 
 </launch>
