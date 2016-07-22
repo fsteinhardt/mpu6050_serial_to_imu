@@ -41,6 +41,7 @@ int main(int argc, char** argv)
   private_node_handle.param<std::string>("tf_frame_id", tf_frame_id, "imu");
   private_node_handle.param<std::string>("imu_frame_id", imu_frame_id, "imu_base");
   private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
+  private_node_handle.param<bool>("broadcast_tf", broadcast_tf, true);
 
   ros::NodeHandle nh;
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 50);
@@ -157,10 +158,12 @@ int main(int argc, char** argv)
               imu_pub.publish(imu);
 
               // publish tf transform
-              static tf::TransformBroadcaster br;
-              tf::Transform transform;
-              transform.setRotation(differential_rotation);
-              br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
+              if (broadcast_tf){
+                static tf::TransformBroadcaster br;
+                tf::Transform transform;
+                transform.setRotation(differential_rotation);
+                br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
+              }
             }
           }
           else
