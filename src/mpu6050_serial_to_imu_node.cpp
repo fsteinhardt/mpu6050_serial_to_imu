@@ -27,6 +27,7 @@ int main(int argc, char** argv)
   std::string tf_frame_id;
   std::string imu_frame_id;
   double time_offset_in_seconds;
+  bool broadcast_tf;
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
