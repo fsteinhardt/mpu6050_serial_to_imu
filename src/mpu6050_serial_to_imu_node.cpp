@@ -50,6 +50,41 @@ int main(int argc, char** argv)
 
   ros::Rate r(1000); // 1000 hz
 
+  sensor_msgs::Imu imu;
+
+  // i do not know the orientation covariance
+  imu.orientation_covariance[0] = 0;
+  imu.orientation_covariance[1] = 0;
+  imu.orientation_covariance[2] = 0;
+  imu.orientation_covariance[3] = 0;
+  imu.orientation_covariance[4] = 0;
+  imu.orientation_covariance[5] = 0;
+  imu.orientation_covariance[6] = 0;
+  imu.orientation_covariance[7] = 0;
+  imu.orientation_covariance[8] = 0;
+
+  // i do not know the angular velocity covariance
+  imu.angular_velocity_covariance[0] = 0;
+  imu.angular_velocity_covariance[1] = 0;
+  imu.angular_velocity_covariance[2] = 0;
+  imu.angular_velocity_covariance[3] = 0;
+  imu.angular_velocity_covariance[4] = 0;
+  imu.angular_velocity_covariance[5] = 0;
+  imu.angular_velocity_covariance[6] = 0;
+  imu.angular_velocity_covariance[7] = 0;
+  imu.angular_velocity_covariance[8] = 0;
+
+  // i do not know the linear acceleration covariance
+  imu.linear_acceleration_covariance[0] = 0;
+  imu.linear_acceleration_covariance[1] = 0;
+  imu.linear_acceleration_covariance[2] = 0;
+  imu.linear_acceleration_covariance[3] = 0;
+  imu.linear_acceleration_covariance[4] = 0;
+  imu.linear_acceleration_covariance[5] = 0;
+  imu.linear_acceleration_covariance[6] = 0;
+  imu.linear_acceleration_covariance[7] = 0;
+  imu.linear_acceleration_covariance[8] = 0;
+
   while(ros::ok())
   {
     try
@@ -72,45 +107,26 @@ int main(int argc, char** argv)
             // TODO: check if line is long enough??
 
 
-            // parse line, get quaternion values
-            if (input.compare(0,2,"$\x02") == 0 && (input.size() == 14))
+            // parse line
+            if (input.compare(0,2,"$\x03") == 0 && (input.size() == 26))
             {
-              uint w = (((0xff &(char)input[2]) << 8) | 0xff &(char)input[3]);
+              // get quaternion values
+              int16_t w = (((0xff &(char)input[2]) << 8) | 0xff &(char)input[3]);
               ROS_DEBUG("w = %04x", w );
 
-              uint x = (((0xff &(char)input[4]) << 8) | 0xff &(char)input[5]);
+              int16_t x = (((0xff &(char)input[4]) << 8) | 0xff &(char)input[5]);
               ROS_DEBUG("x = %04x", x );
 
-              uint y = (((0xff &(char)input[6]) << 8) | 0xff &(char)input[7]);
+              int16_t y = (((0xff &(char)input[6]) << 8) | 0xff &(char)input[7]);
               ROS_DEBUG("y = %04x", y );
 
-              uint z = (((0xff &(char)input[8]) << 8) | 0xff &(char)input[9]);
+              int16_t z = (((0xff &(char)input[8]) << 8) | 0xff &(char)input[9]);
               ROS_DEBUG("z = %04x", z );
 
               double wf = w/16384.0;
               double xf = x/16384.0;
               double yf = y/16384.0;
               double zf = z/16384.0;
-
-              if (wf >= 2.0)
-              {
-                wf = -4.0 +wf;
-              }
-
-              if (xf >= 2.0)
-              {
-                xf = -4.0 +xf;
-              }
-
-              if (yf >= 2.0)
-              {
-                yf = -4.0 +yf;
-              }
-
-              if (zf >= 2.0)
-              {
-                zf = -4.0 +zf;
-              }
 
               tf::Quaternion orientation(xf, yf, zf, wf);
 
@@ -124,37 +140,67 @@ int main(int argc, char** argv)
               tf::Quaternion differential_rotation;
               differential_rotation = zero_orientation.inverse() * orientation;
 
+
+
+              // get gyro values
+              int16_t gx = (((0xff &(char)input[10]) << 8) | 0xff &(char)input[11]);
+              ROS_DEBUG("gx = %04x", gx );
+
+              int16_t gy = (((0xff &(char)input[12]) << 8) | 0xff &(char)input[13]);
+              ROS_DEBUG("gy = %04x", gy );
+
+              int16_t gz = (((0xff &(char)input[14]) << 8) | 0xff &(char)input[15]);
+              ROS_DEBUG("gz = %04x", gz );
+
+              // calculate rotational velocities in rad/s
+              // without the last factor the velocities were too small
+              // http://www.i2cdevlib.com/forums/topic/106-get-angular-velocity-from-mpu-6050/
+              // FIFO frequency 100 Hz -> factor 10
+              //TODO: check / test if rotational velocities are correct
+              double gxf = gx * (4000.0/65536.0) * (M_PI/180.0) * 10;
+              double gyf = gy * (4000.0/65536.0) * (M_PI/180.0) * 10;
+              double gzf = gz * (4000.0/65536.0) * (M_PI/180.0) * 10;
+
+
+              // get acelerometer values
+              int16_t ax = (((0xff &(char)input[16]) << 8) | 0xff &(char)input[17]);
+              ROS_DEBUG("ax = %04x", ax );
+
+              int16_t ay = (((0xff &(char)input[18]) << 8) | 0xff &(char)input[19]);
+              ROS_DEBUG("ay = %04x", ay );
+
+              int16_t az = (((0xff &(char)input[20]) << 8) | 0xff &(char)input[21]);
+              ROS_DEBUG("az = %04x", az );
+
+              // calculate accelerations in m/s²
+              double axf = ax * (8.0 / 65536.0) * 9.81;
+              double ayf = ay * (8.0 / 65536.0) * 9.81;
+              double azf = az * (8.0 / 65536.0) * 9.81;
+
+
+
               // calculate measurement time
               ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
 
               // publish imu message
-              sensor_msgs::Imu imu;
               imu.header.stamp = measurement_time;
               imu.header.frame_id = imu_frame_id;
 
               quaternionTFToMsg(differential_rotation, imu.orientation);
 
-              // i do not know the orientation covariance
-              imu.orientation_covariance[0] = 0;
-              imu.orientation_covariance[1] = 0;
-              imu.orientation_covariance[2] = 0;
-              imu.orientation_covariance[3] = 0;
-              imu.orientation_covariance[4] = 0;
-              imu.orientation_covariance[5] = 0;
-              imu.orientation_covariance[6] = 0;
-              imu.orientation_covariance[7] = 0;
-              imu.orientation_covariance[8] = 0;
+              imu.angular_velocity.x = gxf;
+              imu.angular_velocity.y = gyf;
+              imu.angular_velocity.z = gzf;
 
-              // angular velocity is not provided
-              imu.angular_velocity_covariance[0] = -1;
-
-              // linear acceleration is not provided
-              imu.linear_acceleration_covariance[0] = -1;
+              imu.linear_acceleration.x = axf;
+              imu.linear_acceleration.y = ayf;
+              imu.linear_acceleration.z = azf;
 
               imu_pub.publish(imu);
 
               // publish tf transform
-              if (broadcast_tf){
+              if (broadcast_tf)
+              {
                 static tf::TransformBroadcaster br;
                 tf::Transform transform;
                 transform.setRotation(differential_rotation);

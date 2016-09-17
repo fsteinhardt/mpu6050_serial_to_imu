@@ -140,7 +140,7 @@ float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
 // packet structure for InvenSense teapot demo
-uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
+uint8_t teapotPacket[26] = { '$', 0x03, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
 
@@ -357,8 +357,22 @@ void loop() {
             teapotPacket[7] = fifoBuffer[9];
             teapotPacket[8] = fifoBuffer[12];
             teapotPacket[9] = fifoBuffer[13];
-            Serial.write(teapotPacket, 14);
-            teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
+            // gyro values
+            teapotPacket[10] = fifoBuffer[16];
+            teapotPacket[11] = fifoBuffer[17];
+            teapotPacket[12] = fifoBuffer[20];
+            teapotPacket[13] = fifoBuffer[21];
+            teapotPacket[14] = fifoBuffer[24];
+            teapotPacket[15] = fifoBuffer[25];
+            // accelerometer values
+            teapotPacket[16] = fifoBuffer[28];
+            teapotPacket[17] = fifoBuffer[29];
+            teapotPacket[18] = fifoBuffer[32];
+            teapotPacket[19] = fifoBuffer[33];
+            teapotPacket[20] = fifoBuffer[36];
+            teapotPacket[21] = fifoBuffer[37];
+            Serial.write(teapotPacket, 26);
+            teapotPacket[23]++; // packetCount, loops at 0xFF on purpose
         #endif
 
         // blink LED to indicate activity
