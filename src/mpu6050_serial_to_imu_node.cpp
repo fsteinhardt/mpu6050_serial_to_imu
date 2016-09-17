@@ -71,11 +71,6 @@ int main(int argc, char** argv)
 
             // TODO: check if line is long enough??
 
-            if (input.compare(0,53,"Send any character to begin DMP programming and demo:") == 0 )
-            {
-              ROS_DEBUG("Sending 'A' to start sending of IMU data.");
-              ser.write("A");
-            }
 
             // parse line, get quaternion values
             if (input.compare(0,2,"$\x02") == 0 && (input.size() == 14))
