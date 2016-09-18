@@ -25,7 +25,7 @@ int main(int argc, char** argv)
   std::string port;
   std::string tf_parent_frame_id;
   std::string tf_frame_id;
-  std::string imu_frame_id;
+  std::string frame_id;
   double time_offset_in_seconds;
   bool broadcast_tf;
   double linear_acceleration_stddev;
@@ -41,9 +41,9 @@ int main(int argc, char** argv)
 
   ros::NodeHandle private_node_handle("~");
   private_node_handle.param<std::string>("port", port, "/dev/ttyACM0");
-  private_node_handle.param<std::string>("tf_parent_frame_id", tf_parent_frame_id, "imu_base");
+  private_node_handle.param<std::string>("tf_parent_frame_id", tf_parent_frame_id, "imu_link");
   private_node_handle.param<std::string>("tf_frame_id", tf_frame_id, "imu");
-  private_node_handle.param<std::string>("imu_frame_id", imu_frame_id, "imu_base");
+  private_node_handle.param<std::string>("frame_id", frame_id, "imu_link");
   private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
   private_node_handle.param<bool>("broadcast_tf", broadcast_tf, true);
   private_node_handle.param<double>("linear_acceleration_stddev", linear_acceleration_stddev, 0.0);
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 
               // publish imu message
               imu.header.stamp = measurement_time;
-              imu.header.frame_id = imu_frame_id;
+              imu.header.frame_id = frame_id;
 
               quaternionTFToMsg(differential_rotation, imu.orientation);
 
