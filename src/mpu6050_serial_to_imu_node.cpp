@@ -28,6 +28,9 @@ int main(int argc, char** argv)
   std::string imu_frame_id;
   double time_offset_in_seconds;
   bool broadcast_tf;
+  double linear_acceleration_stddev;
+  double angular_velocity_stddev;
+  double orientation_stddev;
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
@@ -43,6 +46,10 @@ int main(int argc, char** argv)
   private_node_handle.param<std::string>("imu_frame_id", imu_frame_id, "imu_base");
   private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
   private_node_handle.param<bool>("broadcast_tf", broadcast_tf, true);
+  private_node_handle.param<double>("linear_acceleration_stddev", linear_acceleration_stddev, 0.0);
+  private_node_handle.param<double>("angular_velocity_stddev", angular_velocity_stddev, 0.0);
+  private_node_handle.param<double>("orientation_stddev", orientation_stddev, 0.0);
+
 
   ros::NodeHandle nh;
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 50);
@@ -52,38 +59,17 @@ int main(int argc, char** argv)
 
   sensor_msgs::Imu imu;
 
-  // i do not know the orientation covariance
-  imu.orientation_covariance[0] = 0;
-  imu.orientation_covariance[1] = 0;
-  imu.orientation_covariance[2] = 0;
-  imu.orientation_covariance[3] = 0;
-  imu.orientation_covariance[4] = 0;
-  imu.orientation_covariance[5] = 0;
-  imu.orientation_covariance[6] = 0;
-  imu.orientation_covariance[7] = 0;
-  imu.orientation_covariance[8] = 0;
+  imu.linear_acceleration_covariance[0] = linear_acceleration_stddev;
+  imu.linear_acceleration_covariance[4] = linear_acceleration_stddev;
+  imu.linear_acceleration_covariance[8] = linear_acceleration_stddev;
 
-  // i do not know the angular velocity covariance
-  imu.angular_velocity_covariance[0] = 0;
-  imu.angular_velocity_covariance[1] = 0;
-  imu.angular_velocity_covariance[2] = 0;
-  imu.angular_velocity_covariance[3] = 0;
-  imu.angular_velocity_covariance[4] = 0;
-  imu.angular_velocity_covariance[5] = 0;
-  imu.angular_velocity_covariance[6] = 0;
-  imu.angular_velocity_covariance[7] = 0;
-  imu.angular_velocity_covariance[8] = 0;
+  imu.angular_velocity_covariance[0] = angular_velocity_stddev;
+  imu.angular_velocity_covariance[4] = angular_velocity_stddev;
+  imu.angular_velocity_covariance[8] = angular_velocity_stddev;
 
-  // i do not know the linear acceleration covariance
-  imu.linear_acceleration_covariance[0] = 0;
-  imu.linear_acceleration_covariance[1] = 0;
-  imu.linear_acceleration_covariance[2] = 0;
-  imu.linear_acceleration_covariance[3] = 0;
-  imu.linear_acceleration_covariance[4] = 0;
-  imu.linear_acceleration_covariance[5] = 0;
-  imu.linear_acceleration_covariance[6] = 0;
-  imu.linear_acceleration_covariance[7] = 0;
-  imu.linear_acceleration_covariance[8] = 0;
+  imu.orientation_covariance[0] = orientation_stddev;
+  imu.orientation_covariance[4] = orientation_stddev;
+  imu.orientation_covariance[8] = orientation_stddev;
 
   while(ros::ok())
   {
