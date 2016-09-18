@@ -69,7 +69,8 @@ Visualization Manager:
       Class: rviz_imu_plugin/Imu
       Enabled: true
       Name: Imu
-      Topic: /imu
+      Topic: /imu/data
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:

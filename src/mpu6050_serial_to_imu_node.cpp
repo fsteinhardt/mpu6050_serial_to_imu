@@ -51,8 +51,8 @@ int main(int argc, char** argv)
   private_node_handle.param<double>("orientation_stddev", orientation_stddev, 0.0);
 
 
-  ros::NodeHandle nh;
-  ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 50);
+  ros::NodeHandle nh("imu");
+  ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("data", 50);
   ros::ServiceServer service = nh.advertiseService("set_zero_orientation", set_zero_orientation);
 
   ros::Rate r(1000); // 1000 hz
