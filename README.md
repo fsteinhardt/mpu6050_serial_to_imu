@@ -3,35 +3,34 @@ mpu6050_serial_to_imu
 
 This is a simple ROS node to connect an InvenSense MPU 6050 IMU  (I used a cheap GY-521 breakout board) to ROS.
 
-It needs the MPU6050 example script MPU6050_DMP6.ino (part of the [i2cdevlib](http://www.i2cdevlib.com/) from Jeff Rowberg ) running on an arduino. The ROS node reads the IMU orientation from the serial port and publishes it as a ROS [sensor_msgs/Imu](http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html) message. It can also be broadcast as a [tf transform](http://wiki.ros.org/tf).
+It uses an arduino running a program using the [i2cdevlib](http://www.i2cdevlib.com/) from Jeff Rowberg to read the measurements from the MPU6050 sensor and send them to the computer. The ROS node reads the IMU data from the arduinos serial port and publishes the linear accelerations, rotational velocities and the orientation as a ROS [sensor_msgs/Imu](http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html) message. The covariances in this message can be set using parameters. The orientation can also be broadcast as a [tf transform](http://wiki.ros.org/tf).
 
-This arduino script uses the MPU6050 DMP (digital motion processor?) to get filtered orientation values.
+The arduino script uses the MPU6050 DMP (digital motion processor?) to get filtered orientation values.
 
-The ROS node only sets the orientation, no accelerations, velocities or covariance matrices are set.
 
 Setup
 =
 
-To get the arduino demoscripot MPU6050_DMP6.ino programmed on your Arduino and for the electrical connections to the IMU see http://diyhacking.com/arduino-mpu-6050-imu-sensor-tutorial/
+See http://diyhacking.com/arduino-mpu-6050-imu-sensor-tutorial/ for the electrical connections and how to setup the i2cdevlib.
 
-You have to change the output in MPU6050_DMP6.ino to TEAPOT (comment out the `#define OUTPUT_READABLE_YAWPITCHROLL` line and uncomment the  `//#define OUTPUT_TEAPOT` line in MPU6050_DMP6.ino).
+Then program the arduino with the arduino/MPU6050/MPU6050.ino file from this repository.
 
-You might want to measure and set the Offsets for your MPU6050 chip: http://www.i2cdevlib.com/forums/topic/96-arduino-sketch-to-automatically-calculate-mpu6050-offsets/
+You might want to measure and set the offsets for your MPU6050 chip: http://www.i2cdevlib.com/forums/topic/96-arduino-sketch-to-automatically-calculate-mpu6050-offsets/.
 
-A demo launchfile is included to start the node and display the result in rviz.
+After you have measured the offset values you can change them in the MPU6050.ino file (after the line `// supply your own gyro offsets here, scaled for min sensitivity`).
 
-
+A demo launchfile is included to start the node and display some imu values in rviz.
 
 
 #### Published Topics
 
-* **`imu`** ([sensor_msgs::Imu])
+* **`imu/data`** ([sensor_msgs::Imu])
 
-	The resulting Imu orientation.
+	The measured accelerometer, gyro and orientation values.
 
 #### Published TF Transforms
 
-*	The resulting orientation can be published as a tf transform, the frame names can be set using the parameters.
+*	The resulting orientation can be published as a tf transform, the frame names can be set using parameters.
 
 
 #### Services
@@ -57,9 +56,9 @@ A demo launchfile is included to start the node and display the result in rviz.
 	If true: publish the orientation of the IMU as a tf transform. The frame names can be set with the **tf_frame_id** and **tf_parent_frame_id** parameters.
 
 
-* **`imu_frame_id`** (string, default: "imu_base")
+* **`imu_frame_id`** (string, default: "imu_link")
 
-	Sets the name of the base frame for imu messages.
+	Sets the name of the frame for imu messages.
 
 
 * **`tf_parent_frame_id`** (string, default: "imu_base")
@@ -67,7 +66,19 @@ A demo launchfile is included to start the node and display the result in rviz.
 	Sets the name of the parent frame in the tf transform.
 
 
-* **`tf_frame_id`** (string, default: "imu")
+* **`tf_frame_id`** (string, default: "imu_link")
 
 	Sets the name of the own frame in the tf transform.
+
+* **`linear_acceleration_stddev`** (double, default: 0.0)
+
+	Sets the linear_acceleration_covariance matrix diagonal elements.
+
+* **`angular_velocity_stddev`** (double, default: 0.0)
+
+	Sets the angular_velocity_covariance matrix diagonal elements.
+
+* **`orientation_stddev`** (double, default: 0.0)
+
+	Sets the orientation_covariance matrix diagonal elements.
 

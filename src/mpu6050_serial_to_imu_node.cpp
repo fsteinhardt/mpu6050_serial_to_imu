@@ -41,8 +41,8 @@ int main(int argc, char** argv)
 
   ros::NodeHandle private_node_handle("~");
   private_node_handle.param<std::string>("port", port, "/dev/ttyACM0");
-  private_node_handle.param<std::string>("tf_parent_frame_id", tf_parent_frame_id, "imu_link");
-  private_node_handle.param<std::string>("tf_frame_id", tf_frame_id, "imu");
+  private_node_handle.param<std::string>("tf_parent_frame_id", tf_parent_frame_id, "imu_base");
+  private_node_handle.param<std::string>("tf_frame_id", tf_frame_id, "imu_link");
   private_node_handle.param<std::string>("frame_id", frame_id, "imu_link");
   private_node_handle.param<double>("time_offset_in_seconds", time_offset_in_seconds, 0.0);
   private_node_handle.param<bool>("broadcast_tf", broadcast_tf, true);
