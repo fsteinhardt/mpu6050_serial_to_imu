@@ -31,6 +31,8 @@ int main(int argc, char** argv)
   double linear_acceleration_stddev;
   double angular_velocity_stddev;
   double orientation_stddev;
+  uint8_t last_received_message_number;
+  bool received_message = false;
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
@@ -164,6 +166,20 @@ int main(int argc, char** argv)
               double azf = az * (8.0 / 65536.0) * 9.81;
 
 
+              if (received_message)
+              {
+                int message_distance = ((uint8_t)input[23]) - last_received_message_number;
+                if ( message_distance != 1 )
+                {
+                  ROS_INFO("message number: %i", last_received_message_number);
+                  ROS_WARN_STREAM("Missed " << message_distance << " MPU6050 data packets from arduino.");
+                }
+              }
+              else
+              {
+                received_message = true;
+              }
+              last_received_message_number = (uint8_t)input[23];
 
               // calculate measurement time
               ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
