@@ -19,7 +19,7 @@ You might want to measure and set the offsets for your MPU6050 chip: http://www.
 
 After you have measured the offset values you can change them in the MPU6050.ino file (after the line `// supply your own gyro offsets here, scaled for min sensitivity`).
 
-A demo launchfile is included to start the node and display some imu values in rviz.
+The launchfile demo.launch is included to start the node and display some imu values in rviz, but you might need to change the serial port name to point to your arduino.
 
 
 #### Published Topics

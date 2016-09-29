@@ -8,7 +8,6 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
 
-
 bool zero_orientation_set = false;
 
 bool set_zero_orientation(std_srvs::Empty::Request&,
@@ -33,11 +32,10 @@ int main(int argc, char** argv)
   double orientation_stddev;
   uint8_t last_received_message_number;
   bool received_message = false;
+  int data_packet_start;
 
   tf::Quaternion orientation;
   tf::Quaternion zero_orientation;
-
-  std::string partial_line = "";
 
   ros::init(argc, argv, "mpu6050_serial_to_imu_node");
 
@@ -51,7 +49,6 @@ int main(int argc, char** argv)
   private_node_handle.param<double>("linear_acceleration_stddev", linear_acceleration_stddev, 0.0);
   private_node_handle.param<double>("angular_velocity_stddev", angular_velocity_stddev, 0.0);
   private_node_handle.param<double>("orientation_stddev", orientation_stddev, 0.0);
-
 
   ros::NodeHandle nh("imu");
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("data", 50);
@@ -73,6 +70,9 @@ int main(int argc, char** argv)
   imu.orientation_covariance[4] = orientation_stddev;
   imu.orientation_covariance[8] = orientation_stddev;
 
+  std::string input;
+  std::string read;
+
   while(ros::ok())
   {
     try
@@ -82,143 +82,129 @@ int main(int argc, char** argv)
         // read string from serial device
         if(ser.available())
         {
-          std_msgs::String result;
-          result.data = ser.readline(ser.available(), "\n");
-
-          std::string input = partial_line + result.data;
-
-          if (input.at( input.length() - 1 ) == '\n')
+          read = ser.read(ser.available());
+          ROS_DEBUG("read %i new characters from serial port, adding to %i characters of old input.", (int)read.size(), (int)input.size());
+          input += read;
+          while (input.length() >= 26) // while there might be a complete package in input
           {
-            // line complete, delete partial_line var
-            partial_line = "";
-
-            // TODO: check if line is long enough??
-
-
-            // parse line
-            if (input.compare(0,2,"$\x03") == 0 && (input.size() == 26))
+            //parse for data packets
+            data_packet_start = input.find("$\x03");
+            if (data_packet_start != std::string::npos)
             {
-              // get quaternion values
-              int16_t w = (((0xff &(char)input[2]) << 8) | 0xff &(char)input[3]);
-              ROS_DEBUG("w = %04x", w );
-
-              int16_t x = (((0xff &(char)input[4]) << 8) | 0xff &(char)input[5]);
-              ROS_DEBUG("x = %04x", x );
-
-              int16_t y = (((0xff &(char)input[6]) << 8) | 0xff &(char)input[7]);
-              ROS_DEBUG("y = %04x", y );
-
-              int16_t z = (((0xff &(char)input[8]) << 8) | 0xff &(char)input[9]);
-              ROS_DEBUG("z = %04x", z );
-
-              double wf = w/16384.0;
-              double xf = x/16384.0;
-              double yf = y/16384.0;
-              double zf = z/16384.0;
-
-              tf::Quaternion orientation(xf, yf, zf, wf);
-
-              if (!zero_orientation_set)
+              ROS_DEBUG("found possible start of data packet at position %d", data_packet_start);
+              if ((input.length() >= data_packet_start + 26) && (input.compare(data_packet_start + 24, 2, "\n\r")))  //check if positions 24,25 exist, then test values
               {
-                zero_orientation = orientation;
-                zero_orientation_set = true;
-              }
+                ROS_DEBUG("seems to be a real data package: long enough and found end characters");
+                // get quaternion values
+                int16_t w = (((0xff &(char)input[data_packet_start + 2]) << 8) | 0xff &(char)input[data_packet_start + 3]);
+                int16_t x = (((0xff &(char)input[data_packet_start + 4]) << 8) | 0xff &(char)input[data_packet_start + 5]);
+                int16_t y = (((0xff &(char)input[data_packet_start + 6]) << 8) | 0xff &(char)input[data_packet_start + 7]);
+                int16_t z = (((0xff &(char)input[data_packet_start + 8]) << 8) | 0xff &(char)input[data_packet_start + 9]);
 
-              //http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
-              tf::Quaternion differential_rotation;
-              differential_rotation = zero_orientation.inverse() * orientation;
+                double wf = w/16384.0;
+                double xf = x/16384.0;
+                double yf = y/16384.0;
+                double zf = z/16384.0;
 
+                tf::Quaternion orientation(xf, yf, zf, wf);
 
-
-              // get gyro values
-              int16_t gx = (((0xff &(char)input[10]) << 8) | 0xff &(char)input[11]);
-              ROS_DEBUG("gx = %04x", gx );
-
-              int16_t gy = (((0xff &(char)input[12]) << 8) | 0xff &(char)input[13]);
-              ROS_DEBUG("gy = %04x", gy );
-
-              int16_t gz = (((0xff &(char)input[14]) << 8) | 0xff &(char)input[15]);
-              ROS_DEBUG("gz = %04x", gz );
-
-              // calculate rotational velocities in rad/s
-              // without the last factor the velocities were too small
-              // http://www.i2cdevlib.com/forums/topic/106-get-angular-velocity-from-mpu-6050/
-              // FIFO frequency 100 Hz -> factor 10
-              //TODO: check / test if rotational velocities are correct
-              double gxf = gx * (4000.0/65536.0) * (M_PI/180.0) * 10;
-              double gyf = gy * (4000.0/65536.0) * (M_PI/180.0) * 10;
-              double gzf = gz * (4000.0/65536.0) * (M_PI/180.0) * 10;
-
-
-              // get acelerometer values
-              int16_t ax = (((0xff &(char)input[16]) << 8) | 0xff &(char)input[17]);
-              ROS_DEBUG("ax = %04x", ax );
-
-              int16_t ay = (((0xff &(char)input[18]) << 8) | 0xff &(char)input[19]);
-              ROS_DEBUG("ay = %04x", ay );
-
-              int16_t az = (((0xff &(char)input[20]) << 8) | 0xff &(char)input[21]);
-              ROS_DEBUG("az = %04x", az );
-
-              // calculate accelerations in m/s²
-              double axf = ax * (8.0 / 65536.0) * 9.81;
-              double ayf = ay * (8.0 / 65536.0) * 9.81;
-              double azf = az * (8.0 / 65536.0) * 9.81;
-
-
-              if (received_message)
-              {
-                int message_distance = ((uint8_t)input[23]) - last_received_message_number;
-                if ( message_distance != 1 )
+                if (!zero_orientation_set)
                 {
-                  ROS_INFO("message number: %i", last_received_message_number);
-                  ROS_WARN_STREAM("Missed " << message_distance << " MPU6050 data packets from arduino.");
+                  zero_orientation = orientation;
+                  zero_orientation_set = true;
                 }
+
+                //http://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
+                tf::Quaternion differential_rotation;
+                differential_rotation = zero_orientation.inverse() * orientation;
+
+                // get gyro values
+                int16_t gx = (((0xff &(char)input[data_packet_start + 10]) << 8) | 0xff &(char)input[data_packet_start + 11]);
+                int16_t gy = (((0xff &(char)input[data_packet_start + 12]) << 8) | 0xff &(char)input[data_packet_start + 13]);
+                int16_t gz = (((0xff &(char)input[data_packet_start + 14]) << 8) | 0xff &(char)input[data_packet_start + 15]);
+                // calculate rotational velocities in rad/s
+                // without the last factor the velocities were too small
+                // http://www.i2cdevlib.com/forums/topic/106-get-angular-velocity-from-mpu-6050/
+                // FIFO frequency 100 Hz -> factor 10
+                //TODO: check / test if rotational velocities are correct
+                double gxf = gx * (4000.0/65536.0) * (M_PI/180.0) * 10.0;
+                double gyf = gy * (4000.0/65536.0) * (M_PI/180.0) * 10.0;
+                double gzf = gz * (4000.0/65536.0) * (M_PI/180.0) * 10.0;
+
+                // get acelerometer values
+                int16_t ax = (((0xff &(char)input[data_packet_start + 16]) << 8) | 0xff &(char)input[data_packet_start + 17]);
+                int16_t ay = (((0xff &(char)input[data_packet_start + 18]) << 8) | 0xff &(char)input[data_packet_start + 19]);
+                int16_t az = (((0xff &(char)input[data_packet_start + 20]) << 8) | 0xff &(char)input[data_packet_start + 21]);
+                // calculate accelerations in m/s²
+                double axf = ax * (8.0 / 65536.0) * 9.81;
+                double ayf = ay * (8.0 / 65536.0) * 9.81;
+                double azf = az * (8.0 / 65536.0) * 9.81;
+
+                uint8_t received_message_number = input[data_packet_start + 23];
+                ROS_DEBUG("received message number: %i", received_message_number);
+
+                if (received_message) // can only check for continuous numbers if already received at least one packet
+                {
+                  uint8_t message_distance = received_message_number - last_received_message_number;
+                  if ( message_distance > 1 )
+                  {
+                    ROS_WARN_STREAM("Missed " << message_distance - 1 << " MPU6050 data packets from arduino.");
+                  }
+                }
+                else
+                {
+                  received_message = true;
+                }
+                last_received_message_number = received_message_number;
+
+                // calculate measurement time
+                ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
+
+                // publish imu message
+                imu.header.stamp = measurement_time;
+                imu.header.frame_id = frame_id;
+
+                quaternionTFToMsg(differential_rotation, imu.orientation);
+
+                imu.angular_velocity.x = gxf;
+                imu.angular_velocity.y = gyf;
+                imu.angular_velocity.z = gzf;
+
+                imu.linear_acceleration.x = axf;
+                imu.linear_acceleration.y = ayf;
+                imu.linear_acceleration.z = azf;
+
+                imu_pub.publish(imu);
+
+                // publish tf transform
+                if (broadcast_tf)
+                {
+                  static tf::TransformBroadcaster br;
+                  tf::Transform transform;
+                  transform.setRotation(differential_rotation);
+                  br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
+                }
+                input.erase(0, data_packet_start + 26); // delete everything up to and including the processed packet
               }
               else
               {
-                received_message = true;
-              }
-              last_received_message_number = (uint8_t)input[23];
-
-              // calculate measurement time
-              ros::Time measurement_time = ros::Time::now() + ros::Duration(time_offset_in_seconds);
-
-              // publish imu message
-              imu.header.stamp = measurement_time;
-              imu.header.frame_id = frame_id;
-
-              quaternionTFToMsg(differential_rotation, imu.orientation);
-
-              imu.angular_velocity.x = gxf;
-              imu.angular_velocity.y = gyf;
-              imu.angular_velocity.z = gzf;
-
-              imu.linear_acceleration.x = axf;
-              imu.linear_acceleration.y = ayf;
-              imu.linear_acceleration.z = azf;
-
-              imu_pub.publish(imu);
-
-              // publish tf transform
-              if (broadcast_tf)
-              {
-                static tf::TransformBroadcaster br;
-                tf::Transform transform;
-                transform.setRotation(differential_rotation);
-                br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
+                if (input.length() >= data_packet_start + 26)
+                {
+                  input.erase(0, data_packet_start + 1); // delete up to false data_packet_start character so it is not found again
+                }
+                else
+                {
+                  // do not delete start character, maybe complete package has not arrived yet
+                  input.erase(0, data_packet_start);
+                }
               }
             }
+            else
+            {
+              // no start character found in input, so delete everything
+              input.clear();
+            }
           }
-          else
-          {
-            // line incomplete, remember already received characters
-            partial_line = input;
-          }
-        }
-        else  // ser not available
-        {
-
         }
       }
       else
@@ -240,13 +226,8 @@ int main(int argc, char** argv)
 
         if(ser.isOpen())
         {
-          ROS_DEBUG_STREAM("Serial port " << ser.getPort() << " initialized.");
+          ROS_DEBUG_STREAM("Serial port " << ser.getPort() << " initialized and opened.");
         }
-        else
-        {
-          //ROS_INFO_STREAM("Could not initialize serial port.");
-        }
-
       }
     }
     catch (serial::IOException& e)
@@ -258,4 +239,3 @@ int main(int argc, char** argv)
     r.sleep();
   }
 }
-
