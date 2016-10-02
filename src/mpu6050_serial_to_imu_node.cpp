@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <serial/serial.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/Temperature.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <string>
@@ -52,6 +53,7 @@ int main(int argc, char** argv)
 
   ros::NodeHandle nh("imu");
   ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("data", 50);
+  ros::Publisher imu_temperature_pub = nh.advertise<sensor_msgs::Temperature>("temperature", 50);
   ros::ServiceServer service = nh.advertiseService("set_zero_orientation", set_zero_orientation);
 
   ros::Rate r(200); // 200 hz
@@ -70,6 +72,9 @@ int main(int argc, char** argv)
   imu.orientation_covariance[4] = orientation_stddev;
   imu.orientation_covariance[8] = orientation_stddev;
 
+  sensor_msgs::Temperature temperature_msg;
+  temperature_msg.variance = 0;
+
   std::string input;
   std::string read;
 
@@ -85,14 +90,14 @@ int main(int argc, char** argv)
           read = ser.read(ser.available());
           ROS_DEBUG("read %i new characters from serial port, adding to %i characters of old input.", (int)read.size(), (int)input.size());
           input += read;
-          while (input.length() >= 26) // while there might be a complete package in input
+          while (input.length() >= 28) // while there might be a complete package in input
           {
             //parse for data packets
             data_packet_start = input.find("$\x03");
             if (data_packet_start != std::string::npos)
             {
               ROS_DEBUG("found possible start of data packet at position %d", data_packet_start);
-              if ((input.length() >= data_packet_start + 26) && (input.compare(data_packet_start + 24, 2, "\n\r")))  //check if positions 24,25 exist, then test values
+              if ((input.length() >= data_packet_start + 28) && (input.compare(data_packet_start + 26, 2, "\n\r")))  //check if positions 26,27 exist, then test values
               {
                 ROS_DEBUG("seems to be a real data package: long enough and found end characters");
                 // get quaternion values
@@ -140,7 +145,12 @@ int main(int argc, char** argv)
                 double ayf = ay * (8.0 / 65536.0) * 9.81;
                 double azf = az * (8.0 / 65536.0) * 9.81;
 
-                uint8_t received_message_number = input[data_packet_start + 23];
+                // get temperature
+                int16_t temperature = (((0xff &(char)input[data_packet_start + 22]) << 8) | 0xff &(char)input[data_packet_start + 23]);
+                double temperature_in_C = (temperature / 340.0 ) + 36.53;
+                ROS_DEBUG_STREAM("Temperature [in C] " << temperature_in_C);
+
+                uint8_t received_message_number = input[data_packet_start + 25];
                 ROS_DEBUG("received message number: %i", received_message_number);
 
                 if (received_message) // can only check for continuous numbers if already received at least one packet
@@ -176,6 +186,13 @@ int main(int argc, char** argv)
 
                 imu_pub.publish(imu);
 
+                // publish temperature message
+                temperature_msg.header.stamp = measurement_time;
+                temperature_msg.header.frame_id = frame_id;
+                temperature_msg.temperature = temperature_in_C;
+
+                imu_temperature_pub.publish(temperature_msg);
+
                 // publish tf transform
                 if (broadcast_tf)
                 {
@@ -184,11 +201,11 @@ int main(int argc, char** argv)
                   transform.setRotation(differential_rotation);
                   br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
                 }
-                input.erase(0, data_packet_start + 26); // delete everything up to and including the processed packet
+                input.erase(0, data_packet_start + 28); // delete everything up to and including the processed packet
               }
               else
               {
-                if (input.length() >= data_packet_start + 26)
+                if (input.length() >= data_packet_start + 28)
                 {
                   input.erase(0, data_packet_start + 1); // delete up to false data_packet_start character so it is not found again
                 }

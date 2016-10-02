@@ -28,6 +28,10 @@ The launchfile demo.launch is included to start the node and display some imu va
 
 	The measured accelerometer, gyro and orientation values.
 
+* **`imu/temperature`** ([sensor_msgs::Temperature])
+
+	The measured temperature in degrees Celsius.
+
 #### Published TF Transforms
 
 *	The resulting orientation can be published as a tf transform, the frame names can be set using parameters.

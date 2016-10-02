@@ -102,7 +102,7 @@ float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
 // packet structure for InvenSense teapot demo
-uint8_t teapotPacket[26] = { '$', 0x03, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
+uint8_t teapotPacket[28] = { '$', 0x03, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
 
@@ -266,8 +266,12 @@ void loop() {
         teapotPacket[19] = fifoBuffer[33];
         teapotPacket[20] = fifoBuffer[36];
         teapotPacket[21] = fifoBuffer[37];
-        Serial.write(teapotPacket, 26);
-        teapotPacket[23]++; // packetCount, loops at 0xFF on purpose
+        //temperature
+        int16_t temperature = mpu.getTemperature();
+        teapotPacket[22] = temperature >> 8;
+        teapotPacket[23] = temperature & 0xFF;
+        Serial.write(teapotPacket, 28);
+        teapotPacket[25]++; // packetCount, loops at 0xFF on purpose
 
         // blink LED to indicate activity
         blinkState = !blinkState;
