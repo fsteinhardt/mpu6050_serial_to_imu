@@ -75,6 +75,10 @@ int main(int argc, char** argv)
   sensor_msgs::Temperature temperature_msg;
   temperature_msg.variance = 0;
 
+  static tf::TransformBroadcaster tf_br;
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(0,0,0));
+
   std::string input;
   std::string read;
 
@@ -197,10 +201,8 @@ int main(int argc, char** argv)
                 // publish tf transform
                 if (broadcast_tf)
                 {
-                  static tf::TransformBroadcaster br;
-                  tf::Transform transform;
                   transform.setRotation(differential_rotation);
-                  br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
+                  tf_br.sendTransform(tf::StampedTransform(transform, measurement_time, tf_parent_frame_id, tf_frame_id));
                 }
                 input.erase(0, data_packet_start + 28); // delete everything up to and including the processed packet
               }
