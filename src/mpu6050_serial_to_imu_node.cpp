@@ -101,7 +101,7 @@ int main(int argc, char** argv)
             if (data_packet_start != std::string::npos)
             {
               ROS_DEBUG("found possible start of data packet at position %d", data_packet_start);
-              if ((input.length() >= data_packet_start + 28) && (input.compare(data_packet_start + 26, 2, "\n\r")))  //check if positions 26,27 exist, then test values
+              if ((input.length() >= data_packet_start + 28) && (input.compare(data_packet_start + 26, 2, "\r\n") == 0))  //check if positions 26,27 exist, then test values
               {
                 ROS_DEBUG("seems to be a real data package: long enough and found end characters");
                 // get quaternion values
